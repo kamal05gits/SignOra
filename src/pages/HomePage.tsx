@@ -13,6 +13,7 @@ import {
   Siren,
   Activity,
   Hand,
+  Cpu,
 } from "lucide-react";
 import { useRecognitionEngine } from "../hooks/useRecognitionEngine";
 import { useAppStore } from "../store/useAppStore";
@@ -64,7 +65,11 @@ export default function HomePage() {
   }, [lastTokenId]);
 
   const confidencePct = Math.round((currentClassification?.confidence ?? 0) * 100);
-  const confidenceOk = (currentClassification?.confidence ?? 0) >= settings.confidenceThreshold;
+  // The backend's trained models and the on-device classifier are calibrated
+  // differently, so each has its own acceptance threshold.
+  const fromBackend = currentClassification?.source === "backend";
+  const activeThreshold = fromBackend ? settings.backendConfidenceThreshold : settings.confidenceThreshold;
+  const confidenceOk = (currentClassification?.confidence ?? 0) >= activeThreshold;
 
   const voices = useMemo(() => getAvailableVoices(), []);
 
@@ -132,6 +137,15 @@ export default function HomePage() {
                     </Badge>
                     <Badge tone="slate" className="bg-slate-900/60 text-white backdrop-blur">
                       <Hand className="h-3 w-3" /> {handsDetected} hand{handsDetected === 1 ? "" : "s"}
+                    </Badge>
+                    <Badge
+                      tone={currentClassification?.source === "backend" ? "teal" : "slate"}
+                      className="bg-slate-900/60 text-white backdrop-blur"
+                    >
+                      <Cpu className="h-3 w-3" />{" "}
+                      {currentClassification?.source === "backend"
+                        ? currentClassification.modelId ?? "backend"
+                        : "on-device"}
                     </Badge>
                   </div>
                 </div>
@@ -253,7 +267,8 @@ export default function HomePage() {
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Threshold: {Math.round(settings.confidenceThreshold * 100)}% — predictions below this are shown as
+                  Threshold: {Math.round(activeThreshold * 100)}% (
+                  {fromBackend ? "backend model" : "on-device classifier"}) — predictions below this are shown as
                   "uncertain" and never added to the sentence.
                 </p>
               </div>

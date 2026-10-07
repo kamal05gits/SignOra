@@ -10,7 +10,7 @@ import { SIGN_VOCABULARY } from "./signVocabulary";
 
 export function classifyHandFeatures(features: HandFeatureSet[]): ClassificationResult {
   if (!features.length) {
-    return { label: null, gloss: null, confidence: 0, handsUsed: 0 };
+    return { label: null, gloss: null, confidence: 0, handsUsed: 0, source: "on-device" };
   }
 
   // Use the first detected hand as the primary signing hand (documented limitation:
@@ -29,7 +29,7 @@ export function classifyHandFeatures(features: HandFeatureSet[]): Classification
   }
 
   if (!bestDef) {
-    return { label: null, gloss: null, confidence: 0, handsUsed: features.length };
+    return { label: null, gloss: null, confidence: 0, handsUsed: features.length, source: "on-device" };
   }
 
   return {
@@ -37,5 +37,6 @@ export function classifyHandFeatures(features: HandFeatureSet[]): Classification
     gloss: bestDef.gloss,
     confidence: Math.min(1, Math.max(0, bestScore)),
     handsUsed: features.length,
+    source: "on-device",
   };
 }

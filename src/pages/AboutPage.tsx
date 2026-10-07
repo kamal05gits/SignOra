@@ -13,7 +13,7 @@ const PIPELINE = [
   "Frame preprocessing (resize, color conversion — handled internally by MediaPipe)",
   "MediaPipe HandLandmarker (21-point landmarks, on-device WASM)",
   "Feature extraction (finger curl, spread, distances — scale/position invariant)",
-  "Heuristic geometric classification (confidence-scored)",
+  "Classification — either the trained models served by the Python backend, or the on-device geometric classifier",
   "Temporal smoothing + cooldown (majority vote across frames)",
   "Confidence thresholding (reject uncertain predictions)",
   "NLP sentence construction (tokens → normalized text)",
@@ -22,7 +22,7 @@ const PIPELINE = [
 ];
 
 const LIMITATIONS = [
-  "Recognition uses a transparent rule-based geometric classifier, not a trained CNN/LSTM — no ISL video dataset/training pipeline is bundled or fabricated.",
+  "Two recognition engines exist. The on-device one is a transparent rule-based geometric classifier over a small demo vocabulary. The backend one serves the trained checkpoints in models/, and can only answer once those weights are pulled from Git LFS and, for PyTorch files, described in models/model_manifest.json — the Recognition Engine page reports exactly which of those are still missing instead of guessing.",
   "Demo vocabulary covers a small set of static, single-hand signs; it is not an exhaustive ISL dictionary and does not model two-hand compound signs or motion-based signs.",
   "Continuous recognition is sequential isolated-sign detection with stability/cooldown logic, not full co-articulated sentence-level sign language understanding.",
   "Translation quality depends on the free MyMemory API and may be rate-limited; always cross-check important translations.",
@@ -43,6 +43,7 @@ const ACCEPTANCE = [
   "UI remains responsive while recognition runs (bounded RAF loop, no blocking)",
   "Dataset collection and evaluation are reproducible and based on real recorded samples",
   "All limitations are explicitly documented on this page",
+  "Backend model status is reported honestly — a model whose weights are missing is never shown as working",
 ];
 
 export default function AboutPage() {
@@ -76,8 +77,9 @@ export default function AboutPage() {
           re-implemented with equivalent, real, working browser technology rather than being simulated:
           MediaPipe Tasks-Vision (WASM, on-device) for hand landmarks, a transparent geometric rule-based classifier
           for recognition, the Web Speech API for text-to-speech, and the free MyMemory API for translation. The
-          architecture and module boundaries mirror the originally requested design so the vision/ML layer can be
-          swapped for a trained backend model later without touching the UI.
+          architecture and module boundaries mirror the originally requested design, and the trained models have since
+          been wired in: a FastAPI service in backend/ loads the checkpoints from models/ and serves them over REST and
+          a WebSocket, while the browser keeps MediaPipe local and sends only landmark coordinates.
         </p>
       </Card>
 

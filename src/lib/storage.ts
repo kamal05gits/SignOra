@@ -25,6 +25,20 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mirrorPreview: true,
   showLandmarks: true,
   autoSpeak: false,
+
+  // Backend inference. An empty URL means "same origin", which works through
+  // the vite dev proxy (vite.config.ts) and behind any reverse proxy in prod.
+  inferenceMode: "auto",
+  backendUrl: "",
+  activeModelId: null,
+  // Trained models spread probability over many classes, so their top-1 score
+  // is usually lower than the geometric classifier's — hence a separate default.
+  backendConfidenceThreshold: 0.5,
+  streamStride: 1,
+  streamSequenceLength: 30,
+  backendHand: "first",
+  fallbackToOnDevice: true,
+  syncDatasetToBackend: true,
 };
 
 function readJSON<T>(key: string, fallback: T): T {

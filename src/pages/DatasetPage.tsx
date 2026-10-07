@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Download, Upload, Trash2, CircleDot, Database } from "lucide-react";
+import { Camera, Download, Upload, Trash2, CircleDot, Database, CloudUpload } from "lucide-react";
 import { useCamera } from "../hooks/useCamera";
 import { useHandLandmarker } from "../hooks/useHandLandmarker";
+import { useBackendModels } from "../hooks/useBackendModels";
 import { extractFeaturesFromFrame } from "../lib/geometry";
 import { HAND_CONNECTIONS } from "../lib/handConnections";
+import { BackendError, syncSamples } from "../lib/backend";
 import { useAppStore } from "../store/useAppStore";
 import { CameraView } from "../components/CameraView";
 import { Badge, Button, Card, CardHeader, EmptyState } from "../components/ui";
-import type { DatasetSample } from "../types";
+import type { DatasetSample, DetectedHand } from "../types";
 
 export default function DatasetPage() {
   const camera = useCamera();
@@ -19,7 +21,10 @@ export default function DatasetPage() {
   const [label, setLabel] = useState("");
   const [flash, setFlash] = useState(false);
 
-  const { dataset, addSample, removeSample, clearDataset } = useAppStore();
+  const { dataset, addSample, removeSample, clearDataset, settings } = useAppStore();
+  const { baseUrl, status } = useBackendModels();
+  const latestHandsRawRef = useRef<DetectedHand[]>([]);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   useEffect(() => {
     function loop() {
@@ -52,6 +57,9 @@ export default function DatasetPage() {
       }
       setHandCount(detection.hands.length);
       latestHandsRef.current = extractFeaturesFromFrame(detection.hands);
+      // Raw landmarks are what the trained backend models consume, so keep them
+      // next to the engineered features (which the on-device classifier uses).
+      latestHandsRawRef.current = detection.hands;
     }
     if (camera.isActive) rafRef.current = requestAnimationFrame(loop);
     return () => {
@@ -67,10 +75,26 @@ export default function DatasetPage() {
       label: label.trim().toUpperCase(),
       createdAt: Date.now(),
       features: latestHandsRef.current,
+      frames: [{ hands: latestHandsRawRef.current }],
     };
     addSample(sample);
     setFlash(true);
     setTimeout(() => setFlash(false), 250);
+
+    if (settings.syncDatasetToBackend && status === "online") {
+      void pushSamples([sample], false);
+    }
+  }
+
+  /** Push samples to the backend so they survive a browser reset and can be exported for training. */
+  async function pushSamples(samples: DatasetSample[], replace: boolean) {
+    if (samples.length === 0) return;
+    try {
+      const result = await syncSamples(baseUrl, samples, replace);
+      setSyncMessage(`Synced ${result.written} sample(s) — the backend now holds ${result.total}.`);
+    } catch (error) {
+      setSyncMessage(error instanceof BackendError ? error.message : String(error));
+    }
   }
 
   function handleExport() {
@@ -203,9 +227,20 @@ export default function DatasetPage() {
                   <input type="file" accept="application/json" className="hidden" onChange={handleImport} />
                 </label>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => void pushSamples(dataset, false)}
+                disabled={total === 0 || status !== "online"}
+                title={status === "online" ? "Send every sample to the backend" : "Backend is offline"}
+              >
+                <CloudUpload className="h-3.5 w-3.5" /> Sync all to backend
+              </Button>
               <Button size="sm" variant="ghost" className="w-full text-rose-600" onClick={clearDataset} disabled={total === 0}>
                 <Trash2 className="h-3.5 w-3.5" /> Clear all samples
               </Button>
+              {syncMessage && <p className="text-[11px] text-slate-500">{syncMessage}</p>}
             </div>
           </Card>
 

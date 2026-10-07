@@ -6,9 +6,13 @@
 import { create } from "zustand";
 import type {
   AppSettings,
+  BackendHealth,
+  BackendModelInfo,
+  BackendStatus,
   ClassificationResult,
   DatasetSample,
   EmergencyContact,
+  EngineSource,
   EngineStatus,
   RecognizedToken,
   TranslationState,
@@ -78,6 +82,20 @@ interface AppState {
 
   lastError: string | null;
   setError: (msg: string | null) => void;
+
+  // Backend inference state
+  backendStatus: BackendStatus;
+  setBackendStatus: (s: BackendStatus) => void;
+  backendModels: BackendModelInfo[];
+  setBackendModels: (m: BackendModelInfo[]) => void;
+  backendHealth: BackendHealth | null;
+  setBackendHealth: (h: BackendHealth | null) => void;
+  backendError: string | null;
+  setBackendError: (msg: string | null) => void;
+  engineSource: EngineSource;
+  setEngineSource: (s: EngineSource) => void;
+  backendLatencyMs: number;
+  setBackendLatencyMs: (ms: number) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -164,4 +182,22 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   lastError: null,
   setError: (msg) => set({ lastError: msg }),
+
+  backendStatus: "unknown",
+  setBackendStatus: (s) => set({ backendStatus: s }),
+
+  backendModels: [],
+  setBackendModels: (m) => set({ backendModels: m }),
+
+  backendHealth: null,
+  setBackendHealth: (h) => set({ backendHealth: h }),
+
+  backendError: null,
+  setBackendError: (msg) => set({ backendError: msg }),
+
+  engineSource: "on-device",
+  setEngineSource: (s) => set({ engineSource: s }),
+
+  backendLatencyMs: 0,
+  setBackendLatencyMs: (ms) => set({ backendLatencyMs: ms }),
 }));

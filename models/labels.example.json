@@ -1,0 +1,21 @@
+{
+  "_readme": [
+    "TEMPLATE ONLY — this file is ignored by the backend because it is not named labels.json.",
+    "Copy it to models/labels.json (or name it <model_stem>.labels.json) once you have filled in",
+    "the class names in the exact order your model was trained with. Order matters: index 0 of the",
+    "model output is mapped to the first entry, index 1 to the second, and so on.",
+    "",
+    "Two shapes are accepted:",
+    "  1. a flat list of strings                 -> [\"A\", \"B\", \"C\"]",
+    "  2. a list of {label, gloss} objects       -> what you see below",
+    "     `label` is the class name, `gloss` is the word the app speaks/writes.",
+    "",
+    "If the number of entries does not match the model's output width the API still works",
+    "and reports the mismatch in /api/models and in each prediction's `warnings`."
+  ],
+  "labels": [
+    { "label": "A", "gloss": "A" },
+    { "label": "B", "gloss": "B" },
+    { "label": "C", "gloss": "C" }
+  ]
+}

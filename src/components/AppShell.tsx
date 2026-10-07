@@ -9,6 +9,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "../utils/cn";
+import { useAppStore } from "../store/useAppStore";
 
 const NAV_ITEMS = [
   { to: "/", label: "Live Translator", icon: Video, end: true },
@@ -54,8 +55,9 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-400">
-          Final-year CSE academic project. All vision processing runs locally in
+        <EngineFooter />
+        <div className="mt-3 rounded-xl bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-400">
+          Final-year CSE academic project. Hand-landmark detection runs locally in
           your browser — no video is uploaded.
         </div>
       </aside>
@@ -97,6 +99,46 @@ function MobileNav() {
           </NavLink>
         ))}
       </nav>
+    </div>
+  );
+}
+
+/** Which engine is producing signs right now, and whether the API is reachable. */
+function EngineFooter() {
+  const engineSource = useAppStore((s) => s.engineSource);
+  const backendStatus = useAppStore((s) => s.backendStatus);
+  const activeModelId = useAppStore((s) => s.settings.activeModelId);
+  const latency = useAppStore((s) => s.backendLatencyMs);
+
+  const backendLabel =
+    backendStatus === "online" ? "Backend online" : backendStatus === "offline" ? "Backend offline" : "Backend idle";
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-3 text-[11px]">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-slate-600">Recognition engine</span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
+            engineSource === "backend" ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600"
+          )}
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              engineSource === "backend" ? "bg-teal-500" : "bg-slate-400"
+            )}
+          />
+          {engineSource === "backend" ? "Backend model" : "On-device"}
+        </span>
+      </div>
+      <p className="mt-1.5 truncate font-mono text-slate-500" title={activeModelId ?? undefined}>
+        {engineSource === "backend" ? activeModelId ?? "server default" : "geometric classifier"}
+      </p>
+      <p className="mt-1 text-slate-400">
+        {backendLabel}
+        {engineSource === "backend" && latency > 0 ? ` · ${latency.toFixed(0)} ms/prediction` : ""}
+      </p>
     </div>
   );
 }
