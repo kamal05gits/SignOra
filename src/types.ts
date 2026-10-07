@@ -114,7 +114,7 @@ export interface AppSettings {
 
   // --- backend inference (see backend/README.md) ---
   inferenceMode: InferenceMode; // which engine produces signs
-  backendUrl: string; // "" = same origin (the vite proxy); else http://host:port
+  backendUrl: string; // "" = same origin (dev proxy / the Vercel rewrite to the backend service); else http://host:port
   activeModelId: string | null; // model the backend should run
   backendConfidenceThreshold: number; // trained models are calibrated differently
   streamStride: number; // send every Nth frame to the backend

@@ -26,13 +26,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showLandmarks: true,
   autoSpeak: false,
 
-  // Backend inference. An empty URL means "same origin", which works through
-  // the vite dev proxy (vite.config.ts) and behind any reverse proxy in prod.
+  // Backend inference. An empty URL means "same origin", which is what the
+  // Vercel deployment uses: the app and the FastAPI backend are two services of
+  // one project (vercel.json), and /api, /health and /ws are rewritten to the
+  // backend service, so the browser never needs a hostname. The same applies
+  // locally through the vite dev proxy (vite.config.ts) and behind any reverse
+  // proxy in prod.
   inferenceMode: "auto",
-  // Default backend URL baked in at build time (VITE_BACKEND_URL, e.g. the
-  // Vercel API project URL). An empty result means "same origin", which works
-  // through the vite dev proxy (vite.config.ts) and behind any reverse proxy
-  // in prod. Per-browser overrides in Settings always win.
+  // Optional override baked in at build time (VITE_BACKEND_URL) for hosting the
+  // API on a separate host; empty = same origin. Per-browser overrides in
+  // Settings always win.
   backendUrl: import.meta.env.VITE_BACKEND_URL ?? "",
   activeModelId: null,
   // Trained models spread probability over many classes, so their top-1 score
