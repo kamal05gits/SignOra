@@ -28,6 +28,40 @@ docker compose up --build
 If the backend is not running the app still works — set *Settings → Recognition engine* to
 **On-device**, or leave it on **Auto** and it falls back by itself.
 
+## Deploying to Vercel
+
+SignOra runs on Vercel as **two projects** connected to this same repository: a static
+frontend and the FastAPI inference backend.
+
+1. **Frontend project** — Root Directory `.`, **Vite** preset, install `npm ci`, build
+   `npm run build`, output directory `dist`. Optionally set the env var `VITE_BACKEND_URL`
+   to the API project URL so every visitor defaults to backend recognition (per-browser
+   overrides in Settings still win).
+2. **API project** (e.g. `signora-api`) — Root Directory `.` (not `backend/` — the weights
+   live in the root-level `models/` folder), **FastAPI** preset. The entrypoint is declared
+   in [`pyproject.toml`](pyproject.toml) and [`vercel.json`](vercel.json) bundles
+   `models/**` into the function.
+   - **Settings → Git**: enable **Git LFS** (the weights are LFS objects), then redeploy.
+   - **Settings → Functions**: enable **Fluid Compute** (required for the `/ws/stream`
+     WebSocket).
+   - Environment variables:
+     ```text
+     SIGNORA_DATA_DIR=/tmp/signora-data
+     SIGNORA_PRELOAD_MODELS=false
+     SIGNORA_MAX_LOADED_MODELS=1
+     SIGNORA_CORS_ORIGINS=["https://<frontend>.vercel.app"]
+     ```
+     `/tmp` is the only writable path in a Vercel function, so backend-synced dataset
+     samples are not durable across redeploys — use external storage if you need them.
+3. Smoke-test the API URL: `GET /health` and `GET /api/models`.
+
+**Size limits**: the ~190 MB of weights plus PyTorch and TensorFlow push the function past
+Vercel's standard 500 MB limit — you may need large functions (`VERCEL_SUPPORT_LARGE_FUNCTIONS=1`),
+and the Hobby plan caps function memory at 2 GB. The backend tolerates a missing runtime
+(models report `runtime_missing` instead of crashing), so dropping `tensorflow-cpu` or
+`torch` from `pyproject.toml` is a valid way to slim the function to the model family you
+actually serve.
+
 ## How a frame becomes a word
 
 ```
