@@ -1,0 +1,46 @@
+{
+  "_readme": [
+    "Optional description of the checkpoints in this folder.",
+    "A bare .pth file does not store its architecture, so anything the backend cannot",
+    "auto-detect is declared here. Keys starting with '_' are documentation only.",
+    "Full key reference: backend/README.md. After editing, POST /api/models/refresh."
+  ],
+  "defaults": {
+    "normalization": "wrist",
+    "image_size": 224,
+    "sequence_length": 30
+  },
+  "models": {
+    "best_resnet50_isl.pth": {
+      "_note": "torchvision ResNet-50 trained on ISL still frames.",
+      "architecture": "resnet50",
+      "modality": "image",
+      "image_size": 224,
+      "channel_order": "RGB",
+      "scale": 0.00392156862745098,
+      "data_format": "channels_first",
+      "_data_format_note": "torchvision models are NCHW. Only change this if the checkpoint was trained from NHWC tensors."
+    },
+    "best_model_new.pth": {
+      "_note": [
+        "Nothing is declared here on purpose: the backend inspects the checkpoint and infers",
+        "both the architecture (ResNet family / sequential MLP / LSTM / GRU) and the modality.",
+        "If /api/models reports status 'needs_manifest' for this entry, its `hint` field contains",
+        "the exact tensor shapes plus a ready-to-paste block for below — or run",
+        "python backend/scripts/inspect_model.py models/best_model_new.pth"
+      ]
+    },
+    "movinet_isl_final_best.keras": {
+      "_note": "MoViNet is a video model built from tf-models-official custom layers.",
+      "modality": "video",
+      "video_frames": 8,
+      "image_size": 224,
+      "channel_order": "RGB",
+      "preimport": ["official.projects.movinet.modeling.movinet"]
+    },
+    "sign_language_model.h5": {
+      "_note": "Legacy HDF5 Keras model; modality and input shape are read from the graph.",
+      "channel_order": "RGB"
+    }
+  }
+}

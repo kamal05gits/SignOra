@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+# SignOra inference backend dependencies
+#
+#   pip install -r backend/requirements.txt
+#
+# torch / torchvision serve the .pth checkpoints, tensorflow-cpu serves the
+# .keras and .h5 checkpoints. Both are optional at runtime: if one is missing
+# the API still starts and reports those models as `runtime_missing` instead
+# of crashing. On a machine with a GPU, swap `tensorflow-cpu` for `tensorflow`
+# and install torch from https://pytorch.org with the CUDA index URL.
+# ---------------------------------------------------------------------------
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+python-multipart>=0.0.9
+numpy>=1.26
+pillow>=10.2
+
+# --- model runtimes (optional but required to serve the real models) ---
+torch>=2.2
+torchvision>=0.17
+tensorflow-cpu>=2.16 ; platform_machine == "x86_64"
+
+# --- tests ---
+pytest>=8.0
+httpx>=0.27

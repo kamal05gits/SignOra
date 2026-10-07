@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "dev:all": "./scripts/dev.sh",
+    "backend": "uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload",
+    "backend:install": "python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt",
+    "test:backend": "cd backend && .venv/bin/python -m pytest",
+    "inspect:models": "backend/.venv/bin/python backend/scripts/inspect_model.py models"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
