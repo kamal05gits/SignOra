@@ -29,7 +29,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // Backend inference. An empty URL means "same origin", which works through
   // the vite dev proxy (vite.config.ts) and behind any reverse proxy in prod.
   inferenceMode: "auto",
-  backendUrl: "",
+  // Default backend URL baked in at build time (VITE_BACKEND_URL, e.g. the
+  // Vercel API project URL). An empty result means "same origin", which works
+  // through the vite dev proxy (vite.config.ts) and behind any reverse proxy
+  // in prod. Per-browser overrides in Settings always win.
+  backendUrl: import.meta.env.VITE_BACKEND_URL ?? "",
   activeModelId: null,
   // Trained models spread probability over many classes, so their top-1 score
   // is usually lower than the geometric classifier's — hence a separate default.
