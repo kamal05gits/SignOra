@@ -6,8 +6,15 @@
       "framework": "vite"
     },
     "backend": {
-      "root": "backend",
-      "framework": "fastapi"
+      "root": ".",
+      "framework": "fastapi",
+      "entrypoint": "backend.app.main:app",
+      "devCommand": "uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload",
+      "functions": {
+        "backend/app/main.py": {
+          "includeFiles": "models/**"
+        }
+      }
     }
   },
   "rewrites": [

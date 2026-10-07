@@ -8,9 +8,13 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// The Python inference backend (backend/app/main.py). The dev server proxies
-// /api, /health and /ws to it so the browser only ever talks to its own origin
-// — no CORS setup, and it keeps working behind a reverse proxy in production.
+// The Python inference backend (backend/app/main.py). In production the Vercel
+// project routes /api, /health and /ws to the `backend` service with the
+// top-level rewrites in vercel.json, so the browser only ever talks to its own
+// origin and never needs a hostname. This dev proxy reproduces that locally —
+// no CORS setup, and the same relative URLs work behind a reverse proxy.
+// `vercel dev` runs both services, with the backend on :8000 unless it reports
+// another port; point SIGNORA_BACKEND_URL there in that case.
 const backend = process.env.SIGNORA_BACKEND_URL ?? "http://127.0.0.1:8000";
 const backendWs = backend.replace(/^http/, "ws");
 

@@ -30,30 +30,64 @@ If the backend is not running the app still works — set *Settings → Recognit
 
 ## Deploying to Vercel
 
-SignOra runs on Vercel as **two projects** connected to this same repository: a static
-frontend and the FastAPI inference backend.
+SignOra deploys as **one Vercel project made of two [services](https://vercel.com/docs/services)**
+(beta on all plans). Both are declared in [`vercel.json`](vercel.json) and share one domain:
 
-1. **Frontend project** — Root Directory `.`, **Vite** preset, install `npm ci`, build
-   `npm run build`, output directory `dist`. Optionally set the env var `VITE_BACKEND_URL`
-   to the API project URL so every visitor defaults to backend recognition (per-browser
-   overrides in Settings still win).
-2. **API project** (e.g. `signora-api`) — Root Directory `.` (not `backend/` — the weights
-   live in the root-level `models/` folder), **FastAPI** preset. The entrypoint is declared
-   in [`pyproject.toml`](pyproject.toml) and [`vercel.json`](vercel.json) bundles
-   `models/**` into the function.
-   - **Settings → Git**: enable **Git LFS** (the weights are LFS objects), then redeploy.
-   - **Settings → Functions**: enable **Fluid Compute** (required for the `/ws/stream`
-     WebSocket).
-   - Environment variables:
-     ```text
-     SIGNORA_DATA_DIR=/tmp/signora-data
-     SIGNORA_PRELOAD_MODELS=false
-     SIGNORA_MAX_LOADED_MODELS=1
-     SIGNORA_CORS_ORIGINS=["https://<frontend>.vercel.app"]
-     ```
-     `/tmp` is the only writable path in a Vercel function, so backend-synced dataset
-     samples are not durable across redeploys — use external storage if you need them.
-3. Smoke-test the API URL: `GET /health` and `GET /api/models`.
+| Service   | Root | Framework | Public path                  | Role |
+| --------- | ---- | --------- | ---------------------------- | ---- |
+| `app`     | `.`  | `vite`    | `/` (catch-all)              | the React UI, built to `dist/` as a static SPA |
+| `backend` | `.`  | `fastapi` | `/api/*`, `/health`, `/ws/*` | the inference API, built as a Vercel Function |
+
+Top-level rewrites expose them in order (most specific first, catch-all last). A service is private
+until a rewrite targets it, and it receives the **original request path** — the backend's routers
+already mount their own `/api` prefixes, so nothing has to be stripped or re-prefixed:
+
+```text
+/api/(.*) -> backend      /health -> backend      /ws/(.*) -> backend      /(.*) -> app
+```
+
+The backend service is built from the same root as the app (`.`) on purpose: the trained weights
+live in the repository-level `models/` folder, and the Python function bundles files relative to its
+service root, so root `.` is what keeps `backend/**` and `models/**` in the same build. The service
+entrypoint is declared twice, in [`pyproject.toml`](pyproject.toml) (`tool.vercel.entrypoint`) and
+in the `backend` service, and `vercel.json` pins `models/**` into that function with
+`includeFiles`.
+
+Setup:
+
+1. Import the repository as **one project**, then set **Settings → Build and Deployment →
+   Framework Preset** to **Services**. A project builds as services only when that preset is
+   selected *and* `vercel.json` contains a `services` key.
+2. **Settings → Git**: enable **Git LFS** (the weights are LFS objects), then redeploy.
+3. **Settings → Functions**: enable **Fluid Compute** (required for the `/ws/stream` WebSocket).
+4. Environment variables (belong to the `backend` service; the app needs none — it talks to its own
+   origin):
+   ```text
+   SIGNORA_DATA_DIR=/tmp/signora-data
+   SIGNORA_PRELOAD_MODELS=false
+   SIGNORA_MAX_LOADED_MODELS=1
+   ```
+   `/tmp` is the only writable path in a Vercel function, so backend-synced dataset samples are not
+   durable across redeploys — use external storage if you need them. No CORS configuration is
+   needed: the browser only ever calls the deployment's own origin.
+5. Smoke-test the deployment URL: `GET /health` and `GET /api/models`.
+
+### Why there are no service bindings
+
+[Bindings](https://vercel.com/docs/services/bindings) let *server-side code in one service* call
+another service over the internal network (declared on the caller: `bindings: [{ type: "service",
+service: "backend", format: "url", env: "BACKEND_URL" }]`, read at runtime as
+`process.env.BACKEND_URL`). Nothing in this repository does that: the only client of the API is the
+browser — the Vite app is a static bundle and `src/lib/backend.ts` resolves `""` to its own origin,
+which the rewrites above route to `backend`. Adding a binding to the `app` service would therefore
+inject a variable nothing can read: bindings resolve in *functions* at runtime only, never during
+builds, and a static Vite build cannot read them. If you later add server-side code that calls the
+API (a gateway service, SSR, Nitro/API routes), declare the binding on that calling service and read
+the injected variable in its function code.
+
+Local development runs both services together with `vercel dev` (`vercel dev -L` skips cloud auth),
+which also injects binding variables when any are declared. The slightly faster alternative stays
+`./scripts/dev.sh`.
 
 **Size limits**: the ~190 MB of weights plus PyTorch and TensorFlow push the function past
 Vercel's standard 500 MB limit — you may need large functions (`VERCEL_SUPPORT_LARGE_FUNCTIONS=1`),
